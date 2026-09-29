@@ -212,6 +212,7 @@
         background: var(--brand-soft);
         color: var(--brand);
         margin: 2px 4px 2px 0;
+        white-space: nowrap;
       }
       .pill.warn {
         background: var(--warn-soft);
@@ -221,6 +222,56 @@
         color: var(--muted);
         font-size: 13px;
         margin-top: 4px;
+      }
+      .pill.muted {
+        background: var(--line);
+        color: var(--muted);
+      }
+      .alerta {
+        border-left: 4px solid var(--warn);
+        background: var(--warn-soft);
+        color: var(--ink);
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin: 8px 0;
+      }
+      .alerta b {
+        color: var(--warn);
+      }
+      h3 {
+        margin: 16px 0 6px;
+        font-size: 15px;
+      }
+      .item {
+        padding: 10px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .item:last-child {
+        border-bottom: 0;
+      }
+      .mono {
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 12px;
+        overflow-wrap: anywhere;
+      }
+      details summary {
+        cursor: pointer;
+        color: var(--brand);
+        font-size: 13px;
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+      }
+      pre {
+        margin: 4px 0 0;
+        padding: 10px;
+        background: var(--bg);
+        border-radius: 10px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .tabla-scroll {
+        overflow-x: auto;
       }
       .demo {
         background: #ffc845;
@@ -387,6 +438,11 @@
           'Actualizado ' +
           new Date(d.generado).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
         app.replaceChildren(
+          seccion(
+            'Salud de los datos',
+            'Cómo corrió la actualización de promos de cada madrugada',
+            salud(d.salud),
+          ),
           kpis(d),
           seccion('Usuarios activos por día', 'Últimos 90 días', grafico(d.diarios)),
           seccion(
@@ -419,6 +475,11 @@
             'Promos reportadas',
             '"Esto no funcionó", últimos 60 días',
             reportadas(d.reportadas),
+          ),
+          seccion(
+            'Errores de la app',
+            'Últimos 7 días, de más a menos frecuente. Solo de quienes comparten estadísticas.',
+            errores(d.errores),
           ),
           acciones(),
         );
@@ -619,6 +680,206 @@
         return lista;
       }
 
+      // ——— salud de los datos y errores (docs/decisiones/0013) ———
+      // "29/09 08:09", corto para que entre en la tabla del celular.
+      const fechaHora = (iso) => {
+        const d = new Date(iso);
+        const dos = (n) => String(n).padStart(2, '0');
+        return `${dos(d.getDate())}/${dos(d.getMonth() + 1)} ${dos(d.getHours())}:${dos(d.getMinutes())}`;
+      };
+      /** Una fase que no corrió en 26 h (el cron es diario) cuenta como caída. */
+      const HORAS_SIN_CORRER = 26;
+      const sinCorrer = (f) =>
+        !f.corrida || Date.now() - new Date(f.corrida).getTime() > HORAS_SIN_CORRER * 3600000;
+      const noDisponible = () =>
+        vacio('No disponible todavía: falta aplicar la migración de errores y salud.');
+
+      function salud(s) {
+        if (!s || !s.fases) return noDisponible();
+        const fases = s.fases || [];
+        const fallas = s.fallas || [];
+        const caidas = s.caidas || [];
+        const conFallas = fases.filter((f) => !sinCorrer(f) && Number(f.fallidas) > 0);
+        const sinCorrerLista = fases.filter(sinCorrer);
+        const bien = fases.length - conFallas.length - sinCorrerLista.length;
+        const cont = el('div', {});
+
+        const resumen = el('div', { class: 'row', style: 'justify-content:flex-start' });
+        resumen.append(el('span', { class: 'pill', text: `${bien} fases bien` }));
+        if (conFallas.length)
+          resumen.append(
+            el('span', {
+              class: 'pill warn',
+              text: `${conFallas.length} con fuentes que fallaron`,
+            }),
+          );
+        if (sinCorrerLista.length)
+          resumen.append(
+            el('span', {
+              class: 'pill warn',
+              text: `${sinCorrerLista.length} sin correr en ${HORAS_SIN_CORRER} h`,
+            }),
+          );
+        cont.append(resumen);
+
+        // Lo que falló: arriba y en rojo. Lo que anda, sin color.
+        cont.append(el('h3', { text: 'Fuentes que fallaron (últimas 24 h)' }));
+        if (!fallas.length) cont.append(vacio('Ninguna fuente falló.'));
+        for (const f of fallas)
+          cont.append(
+            el(
+              'div',
+              { class: 'alerta' },
+              el('b', { text: f.fuente }),
+              el('span', {
+                class: 'sub',
+                text: ` · ${f.banco_tarjeta || '—'} · ${f.fase} · ${fechaHora(f.corrida)}`,
+              }),
+              el('div', { class: 'mono', text: f.error || 'Sin detalle' }),
+            ),
+          );
+
+        if (sinCorrerLista.length) {
+          cont.append(el('h3', { text: 'Fases que no corrieron' }));
+          for (const f of sinCorrerLista)
+            cont.append(
+              el(
+                'div',
+                { class: 'alerta' },
+                el('b', { text: f.fase }),
+                el('span', {
+                  class: 'sub',
+                  text: f.corrida
+                    ? ` · última vez ${fechaHora(f.corrida)}`
+                    : ' · sin corridas en 8 días (¿se cortó por tiempo o por CPU?)',
+                }),
+              ),
+            );
+        }
+
+        cont.append(el('h3', { text: 'Trajeron mucho menos que de costumbre' }));
+        if (!caidas.length)
+          cont.append(vacio('Ninguna fuente trajo menos de la mitad de su promedio.'));
+        else
+          cont.append(
+            tabla(
+              [['Fuente'], ['Trajo', 1], ['Promedio 7 días', 1], ['%', 1]],
+              caidas.map((c) => [
+                el(
+                  'div',
+                  {},
+                  el('b', { text: c.fuente }),
+                  el('div', {
+                    class: 'sub',
+                    style: 'margin:0',
+                    text: `${c.banco_tarjeta || '—'} · ${c.fase}`,
+                  }),
+                ),
+                [num(c.encontrados), 1],
+                [num(c.promedio_7d), 1],
+                [porcentaje(c.pct), 1],
+              ]),
+            ),
+          );
+
+        cont.append(el('h3', { text: 'Última corrida de cada fase' }));
+        if (!fases.length) cont.append(vacio());
+        else {
+          const orden = [...fases].sort(
+            (a, b) =>
+              Number(sinCorrer(b)) - Number(sinCorrer(a)) ||
+              Number(b.fallidas) - Number(a.fallidas) ||
+              String(a.fase).localeCompare(String(b.fase)),
+          );
+          const t = tabla(
+            [['Fase'], ['Cuándo', 1], ['Fuentes', 1], ['Trajo', 1], ['Estado', 1]],
+            orden.map((f) => {
+              const estado = sinCorrer(f)
+                ? el('span', { class: 'pill warn', text: 'No corrió' })
+                : Number(f.fallidas) > 0
+                  ? el('span', { class: 'pill warn', text: `Fallaron ${f.fallidas}` })
+                  : el('span', { class: 'pill muted', text: 'Bien' });
+              return [
+                [f.fase],
+                [f.corrida ? fechaHora(f.corrida) : '—', 1],
+                [num(f.fuentes), 1],
+                [num(f.encontrados), 1],
+                estado,
+              ];
+            }),
+          );
+          const wrap = el('details', {}, el('summary', { text: `Ver las ${fases.length} fases` }));
+          wrap.append(el('div', { class: 'tabla-scroll' }, t));
+          cont.append(wrap);
+        }
+
+        const activas = s.promosActivas || [];
+        const total = activas.reduce((a, p) => a + Number(p.activas), 0);
+        cont.append(
+          el('h3', { text: `Promos activas: ${num(total)} en ${num(activas.length)} productos` }),
+        );
+        if (!activas.length) cont.append(vacio());
+        else {
+          const top = activas.slice(0, 15);
+          const max = Number(top[0].activas) || 1;
+          cont.append(
+            tabla(
+              [['Banco, billetera o programa'], ['Activas', 1]],
+              top.map((p) => [
+                el(
+                  'div',
+                  {},
+                  el('span', { text: p.producto }),
+                  el('div', { class: 'bar', style: `width:${(Number(p.activas) / max) * 100}%` }),
+                ),
+                [num(p.activas), 1],
+              ]),
+            ),
+          );
+        }
+        return cont;
+      }
+
+      function errores(rows) {
+        if (!rows) return noDisponible();
+        if (!rows.length) return vacio('Sin errores en los últimos 7 días.');
+        const lista = el('div', {});
+        for (const e of rows) {
+          const pills = el('div', {});
+          pills.append(el('span', { class: 'pill', text: `${num(e.veces_7d)} veces` }));
+          pills.append(
+            el('span', {
+              class: 'pill',
+              text: `${num(e.instalaciones_7d)} ${Number(e.instalaciones_7d) === 1 ? 'instalación' : 'instalaciones'}`,
+            }),
+          );
+          if (Number(e.fatales))
+            pills.append(el('span', { class: 'pill warn', text: `${num(e.fatales)} fatales` }));
+          if (e.ruta) pills.append(el('span', { class: 'pill muted', text: e.ruta }));
+          for (const p of e.plataformas || [])
+            pills.append(el('span', { class: 'pill muted', text: p }));
+          const versiones = (e.versiones || []).join(', ') || e.version_ultima || '—';
+          const item = el(
+            'div',
+            { class: 'item' },
+            el('b', { class: 'mono', text: `${e.nombre}: ${e.mensaje}` }),
+            pills,
+            el('div', {
+              class: 'sub',
+              style: 'margin:4px 0 0',
+              text: `Primera vez ${fechaHora(e.primera_vez)} · última ${fechaHora(e.ultima_vez)} · versiones ${versiones} · ${num(e.veces_total)} en total`,
+            }),
+          );
+          if (e.stack) {
+            const d = el('details', {}, el('summary', { text: 'Ver el stack' }));
+            d.append(el('pre', { class: 'mono', text: e.stack }));
+            item.append(d);
+          }
+          lista.append(item);
+        }
+        return lista;
+      }
+
       function acciones() {
         const salir = el('button', { class: 'ghost', text: 'Salir' });
         salir.addEventListener('click', () => {
@@ -632,6 +893,7 @@
 
       // ——— datos de ejemplo (?demo): solo para ver el diseño ———
       function datosDemo() {
+        const hace = (d) => new Date(Date.now() - d * 86400000).toISOString();
         const dias = Array.from({ length: 60 }, (_, i) => {
           const d = new Date(Date.now() - (59 - i) * 86400000).toISOString().slice(0, 10);
           return { dia: d, activos: Math.round(200 + i * 40 + Math.sin(i / 3) * 90) };
@@ -683,6 +945,94 @@
               ultimos_comentarios: ['En caja me dijeron que no aplica con débito'],
             },
           ],
+          errores: [
+            {
+              huella: '3f9a1c0de2b47a55',
+              nombre: 'TypeError',
+              mensaje: "Cannot read property 'tope' of undefined",
+              stack:
+                'at PromoInfoCard (index.android.bundle:1:482113)\nat renderWithHooks (index.android.bundle:1:210554)\nat beginWork (index.android.bundle:1:233010)',
+              ruta: '/descuento/[id]',
+              primera_vez: hace(3),
+              ultima_vez: hace(0.1),
+              veces_7d: 57,
+              veces_total: 61,
+              fatales: 12,
+              instalaciones_7d: 19,
+              version_ultima: '1.0.1',
+              versiones: ['1.0.0', '1.0.1'],
+              plataformas: ['android', 'ios'],
+            },
+            {
+              huella: '0b12de77a90c4e31',
+              nombre: 'Error',
+              mensaje: 'Network request failed <url>',
+              stack: null,
+              ruta: '/buscar',
+              primera_vez: hace(6),
+              ultima_vez: hace(1),
+              veces_7d: 8,
+              veces_total: 8,
+              fatales: 0,
+              instalaciones_7d: 1,
+              version_ultima: '1.0.1',
+              versiones: ['1.0.1'],
+              plataformas: ['ios'],
+            },
+          ],
+          salud: {
+            fases: [
+              ...['hub', 'hub_2', 'programas', 'bancos', 'bancos_2', 'bancos_3', 'medios'].map(
+                (fase, i) => ({
+                  fase,
+                  corrida: hace(0.2),
+                  fuentes: 2 + (i % 3),
+                  fallidas: fase === 'bancos_2' ? 1 : 0,
+                  encontrados: 300 + i * 120,
+                  insertados: 290 + i * 118,
+                  ok: fase !== 'bancos_2',
+                }),
+              ),
+              {
+                fase: 'bancos_7',
+                corrida: hace(2.1),
+                fuentes: 1,
+                fallidas: 0,
+                encontrados: 1683,
+                insertados: 1683,
+                ok: true,
+              },
+            ],
+            fallas: [
+              {
+                corrida: hace(0.2),
+                fase: 'bancos_2',
+                fuente: 'bbva_mc',
+                banco_tarjeta: 'BBVA Mastercard',
+                error: 'HTTP 503 Service Unavailable',
+              },
+            ],
+            caidas: [
+              {
+                fase: 'bancos_12',
+                fuente: 'credicoop',
+                banco_tarjeta: 'Credicoop Visa',
+                corrida: hace(0.2),
+                encontrados: 1210,
+                promedio_7d: 4650,
+                corridas: 7,
+                pct: 26,
+              },
+            ],
+            promosActivas: [
+              { producto: 'Credicoop Visa', activas: 4699 },
+              { producto: 'Macro Visa', activas: 1683 },
+              { producto: 'BBVA Visa', activas: 412 },
+              { producto: 'Mercado Pago', activas: 230 },
+              { producto: 'Clarín 365', activas: 180 },
+              { producto: 'Prex', activas: 11 },
+            ],
+          },
         };
       }
 
