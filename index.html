@@ -270,7 +270,12 @@
           day: '2-digit',
           month: '2-digit',
         });
+      // La clave queda en memoria mientras la página está abierta, y además en localStorage si el
+      // navegador lo deja (en incógnito, con bloqueos de privacidad o en el navegador de WhatsApp o
+      // Instagram no hay almacenamiento: antes la clave se perdía y volvía al login sin avisar).
+      let claveEnMemoria = null;
       const leerClave = () => {
+        if (claveEnMemoria) return claveEnMemoria;
         try {
           return localStorage.getItem(KEY);
         } catch {
@@ -278,6 +283,7 @@
         }
       };
       const guardarClave = (v) => {
+        claveEnMemoria = v || null;
         try {
           v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY);
         } catch {}
@@ -313,6 +319,8 @@
         const input = el('input', {
           type: 'password',
           autocomplete: 'current-password',
+          autocapitalize: 'off',
+          spellcheck: 'false',
           placeholder: 'Clave del panel',
           'aria-label': 'Clave del panel',
           required: '',
@@ -327,11 +335,24 @@
           }),
           error ? el('div', { class: 'error', text: error }) : null,
           input,
+          el('button', {
+            type: 'button',
+            class: 'ghost',
+            text: 'Mostrar la clave',
+            id: 'ver-clave',
+          }),
           el('button', { type: 'submit', text: 'Ver métricas' }),
         );
+        form.querySelector('#ver-clave').addEventListener('click', (e) => {
+          const oculta = input.type === 'password';
+          input.type = oculta ? 'text' : 'password';
+          e.target.textContent = oculta ? 'Ocultar la clave' : 'Mostrar la clave';
+        });
         form.addEventListener('submit', (e) => {
           e.preventDefault();
-          guardarClave(input.value.trim());
+          const clave = input.value.trim();
+          if (!clave) return login('Pegá la clave del archivo .panel-clave.');
+          guardarClave(clave);
           cargar();
         });
         app.append(el('section', { class: 'card' }, form));
