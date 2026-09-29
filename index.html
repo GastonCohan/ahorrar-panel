@@ -45,7 +45,12 @@
         margin: 0;
         background: var(--bg);
         color: var(--ink);
-        font: 16px/1.4 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        font:
+          16px/1.4 system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
       }
       header {
         background: #0a4438;
@@ -258,7 +263,8 @@
         return n;
       };
       const num = (n) => Number(n || 0).toLocaleString('es-AR');
-      const porcentaje = (v) => Number(v).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + '%';
+      const porcentaje = (v) =>
+        Number(v).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + '%';
       const fecha = (iso) =>
         new Date(iso + (iso.length === 10 ? 'T12:00:00' : '')).toLocaleDateString('es-AR', {
           day: '2-digit',
@@ -315,7 +321,10 @@
           'form',
           {},
           el('h2', { text: 'Entrar' }),
-          el('p', { class: 'sub', text: 'La clave está en el archivo .panel-clave del proyecto. Queda guardada solo en este navegador.' }),
+          el('p', {
+            class: 'sub',
+            text: 'La clave está en el archivo .panel-clave del proyecto. Queda guardada solo en este navegador.',
+          }),
           error ? el('div', { class: 'error', text: error }) : null,
           input,
           el('button', { type: 'submit', text: 'Ver métricas' }),
@@ -354,11 +363,16 @@
       function render(d) {
         document.getElementById('demo').hidden = !demo;
         document.getElementById('stamp').textContent =
-          'Actualizado ' + new Date(d.generado).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+          'Actualizado ' +
+          new Date(d.generado).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
         app.replaceChildren(
           kpis(d),
           seccion('Usuarios activos por día', 'Últimos 90 días', grafico(d.diarios)),
-          seccion('Retención', 'De cada día de instalación, cuántos volvieron al día 1, 7 y 30', retencion(d.retencion)),
+          seccion(
+            'Retención',
+            'De cada día de instalación, cuántos volvieron al día 1, 7 y 30',
+            retencion(d.retencion),
+          ),
           el(
             'div',
             { class: 'grid2' },
@@ -368,17 +382,35 @@
           el(
             'div',
             { class: 'grid2' },
-            seccion('Tarjetas y billeteras agregadas', 'Últimos 30 días', ranking(d.dimensiones, 'tarjeta_agregada')),
+            seccion(
+              'Tarjetas y billeteras agregadas',
+              'Últimos 30 días',
+              ranking(d.dimensiones, 'tarjeta_agregada'),
+            ),
             seccion('Filtros del buscador', 'Últimos 30 días', ranking(d.dimensiones, 'filtro')),
           ),
-          seccion('Búsquedas sin resultado', 'Lo que la gente busca y no encuentra: comercios o bancos que faltan', sinResultados(d.sinResultados)),
-          seccion('Promos reportadas', '"Esto no funcionó", últimos 60 días', reportadas(d.reportadas)),
+          seccion(
+            'Búsquedas sin resultado',
+            'Lo que la gente busca y no encuentra: comercios o bancos que faltan',
+            sinResultados(d.sinResultados),
+          ),
+          seccion(
+            'Promos reportadas',
+            '"Esto no funcionó", últimos 60 días',
+            reportadas(d.reportadas),
+          ),
           acciones(),
         );
       }
 
       function seccion(titulo, sub, contenido) {
-        return el('section', { class: 'card' }, el('h2', { text: titulo }), el('p', { class: 'sub', text: sub }), contenido);
+        return el(
+          'section',
+          { class: 'card' },
+          el('h2', { text: titulo }),
+          el('p', { class: 'sub', text: sub }),
+          contenido,
+        );
       }
       const vacio = (t) => el('p', { class: 'empty', text: t || 'Todavía no hay datos.' });
 
@@ -387,8 +419,11 @@
         const semana = d.semanales[0];
         const mes = d.mensuales[0];
         const conD7 = d.retencion.filter((r) => r.d7_pct != null);
-        const d7 = conD7.length ? conD7.reduce((a, r) => a + Number(r.d7_pct), 0) / conD7.length : null;
-        const item = (valor, etiqueta) => el('div', { class: 'kpi' }, el('b', { text: valor }), el('small', { text: etiqueta }));
+        const d7 = conD7.length
+          ? conD7.reduce((a, r) => a + Number(r.d7_pct), 0) / conD7.length
+          : null;
+        const item = (valor, etiqueta) =>
+          el('div', { class: 'kpi' }, el('b', { text: valor }), el('small', { text: etiqueta }));
         return el(
           'section',
           { class: 'kpis' },
@@ -406,7 +441,11 @@
           P = 28;
         const max = Math.max(...rows.map((r) => Number(r.activos)), 1);
         const bw = (W - P) / rows.length;
-        const s = svgEl('svg', { viewBox: `0 0 ${W} ${H + 24}`, role: 'img', 'aria-label': 'Usuarios activos por día' });
+        const s = svgEl('svg', {
+          viewBox: `0 0 ${W} ${H + 24}`,
+          role: 'img',
+          'aria-label': 'Usuarios activos por día',
+        });
         s.append(svgEl('line', { x1: P, y1: H, x2: W, y2: H, stroke: 'var(--line)' }));
         const top = svgEl('text', { x: 0, y: 12, 'font-size': 12, fill: 'var(--muted)' });
         top.textContent = num(max);
@@ -430,7 +469,13 @@
           // La primera y la última alineadas al borde, para que no se corten.
           const ancla = i === 0 ? 'start' : i === rows.length - 1 ? 'end' : 'middle';
           const x = i === 0 ? P : i === rows.length - 1 ? W : P + i * bw + bw / 2;
-          const t = svgEl('text', { x, y: H + 18, 'font-size': 12, fill: 'var(--muted)', 'text-anchor': ancla });
+          const t = svgEl('text', {
+            x,
+            y: H + 18,
+            'font-size': 12,
+            fill: 'var(--muted)',
+            'text-anchor': ancla,
+          });
           t.textContent = fecha(rows[i].dia);
           s.append(t);
         }
@@ -439,10 +484,22 @@
 
       function tabla(cabeza, filas) {
         const t = el('table', {});
-        t.append(el('tr', {}, ...cabeza.map(([txt, n]) => el('th', { class: n ? 'n' : '', text: txt }))));
+        t.append(
+          el('tr', {}, ...cabeza.map(([txt, n]) => el('th', { class: n ? 'n' : '', text: txt }))),
+        );
         // Cada celda es un nodo (se pone tal cual) o [texto, numérica].
         for (const f of filas)
-          t.append(el('tr', {}, ...f.map((c) => (c instanceof Node ? el('td', {}, c) : el('td', { class: c[1] ? 'n' : '', text: c[0] })))));
+          t.append(
+            el(
+              'tr',
+              {},
+              ...f.map((c) =>
+                c instanceof Node
+                  ? el('td', {}, c)
+                  : el('td', { class: c[1] ? 'n' : '', text: c[0] }),
+              ),
+            ),
+          );
         return t;
       }
 
@@ -451,7 +508,15 @@
         const pct = (v) => (v == null ? '—' : porcentaje(v));
         return tabla(
           [['Instalados el'], ['Nuevos', 1], ['Día 1', 1], ['Día 7', 1], ['Día 30', 1]],
-          rows.slice(0, 14).map((r) => [[fecha(r.cohorte)], [num(r.nuevas), 1], [pct(r.d1_pct), 1], [pct(r.d7_pct), 1], [pct(r.d30_pct), 1]]),
+          rows
+            .slice(0, 14)
+            .map((r) => [
+              [fecha(r.cohorte)],
+              [num(r.nuevas), 1],
+              [pct(r.d1_pct), 1],
+              [pct(r.d7_pct), 1],
+              [pct(r.d30_pct), 1],
+            ]),
         );
       }
 
@@ -460,27 +525,45 @@
         const tot = {};
         for (const r of rows) tot[r.evento] = (tot[r.evento] || 0) + Number(r.cantidad);
         const lista = Object.entries(tot).sort((a, b) => b[1] - a[1]);
-        return tabla([['Evento'], ['Veces', 1]], lista.map(([e, n]) => [[NOMBRES[e] || e], [num(n), 1]]));
+        return tabla(
+          [['Evento'], ['Veces', 1]],
+          lista.map(([e, n]) => [[NOMBRES[e] || e], [num(n), 1]]),
+        );
       }
 
       function ranking(rows, evento) {
         const tot = {};
-        for (const r of rows.filter((x) => x.evento === evento)) tot[r.dimension] = (tot[r.dimension] || 0) + Number(r.cantidad);
-        const lista = Object.entries(tot).sort((a, b) => b[1] - a[1]).slice(0, 12);
+        for (const r of rows.filter((x) => x.evento === evento))
+          tot[r.dimension] = (tot[r.dimension] || 0) + Number(r.cantidad);
+        const lista = Object.entries(tot)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 12);
         if (!lista.length) return vacio();
         const max = lista[0][1];
         return tabla(
-          [['', 0], ['Veces', 1]],
+          [
+            ['', 0],
+            ['Veces', 1],
+          ],
           lista.map(([k, n]) => {
-            const celda = el('div', {}, el('span', { text: k === 'texto' ? 'Texto libre' : k }), el('div', { class: 'bar', style: `width:${(n / max) * 100}%` }));
+            const celda = el(
+              'div',
+              {},
+              el('span', { text: k === 'texto' ? 'Texto libre' : k }),
+              el('div', { class: 'bar', style: `width:${(n / max) * 100}%` }),
+            );
             return [celda, [num(n), 1]];
           }),
         );
       }
 
       function sinResultados(rows) {
-        if (!rows.length) return vacio('Nadie buscó algo que no encontrara. O todavía no hay datos.');
-        return tabla([['Buscaron'], ['Veces', 1], ['Última vez', 1]], rows.map((r) => [[r.texto], [num(r.veces), 1], [fecha(r.ultima_vez), 1]]));
+        if (!rows.length)
+          return vacio('Nadie buscó algo que no encontrara. O todavía no hay datos.');
+        return tabla(
+          [['Buscaron'], ['Veces', 1], ['Última vez', 1]],
+          rows.map((r) => [[r.texto], [num(r.veces), 1], [fecha(r.ultima_vez), 1]]),
+        );
       }
 
       function reportadas(rows) {
@@ -488,14 +571,24 @@
         const lista = el('div', {});
         for (const r of rows) {
           const pills = el('div', {});
-          for (const [k, label] of Object.entries(MOTIVOS)) if (Number(r[k])) pills.append(el('span', { class: 'pill warn', text: `${label} · ${r[k]}` }));
-          if (!r.sigue_activa) pills.append(el('span', { class: 'pill', text: 'Ya no está activa' }));
-          const quotes = (r.ultimos_comentarios || []).map((c) => el('div', { class: 'quote', text: '“' + c + '”' }));
+          for (const [k, label] of Object.entries(MOTIVOS))
+            if (Number(r[k]))
+              pills.append(el('span', { class: 'pill warn', text: `${label} · ${r[k]}` }));
+          if (!r.sigue_activa)
+            pills.append(el('span', { class: 'pill', text: 'Ya no está activa' }));
+          const quotes = (r.ultimos_comentarios || []).map((c) =>
+            el('div', { class: 'quote', text: '“' + c + '”' }),
+          );
           lista.append(
             el(
               'div',
               { style: 'padding:10px 0;border-bottom:1px solid var(--line)' },
-              el('div', { class: 'row' }, el('b', { text: `${r.marca || '—'} · ${r.descuento_porcentaje ?? '?'}%` }), el('span', { class: 'pill', text: `${r.reportes} reportes` })),
+              el(
+                'div',
+                { class: 'row' },
+                el('b', { text: `${r.marca || '—'} · ${r.descuento_porcentaje ?? '?'}%` }),
+                el('span', { class: 'pill', text: `${r.reportes} reportes` }),
+              ),
               el('div', { class: 'sub', style: 'margin:2px 0', text: r.banco_tarjeta || '' }),
               pills,
               ...quotes,
@@ -527,7 +620,16 @@
           diarios: dias,
           semanales: [{ semana: dias[55].dia, activos: 9800 }],
           mensuales: [{ mes: dias[40].dia, activos: 21400 }],
-          retencion: dias.slice(-20).reverse().map((d, i) => ({ cohorte: d.dia, nuevas: 400 + i * 7, d1_pct: i > 0 ? 42.5 : null, d7_pct: i > 6 ? 21.3 : null, d30_pct: null })),
+          retencion: dias
+            .slice(-20)
+            .reverse()
+            .map((d, i) => ({
+              cohorte: d.dia,
+              nuevas: 400 + i * 7,
+              d1_pct: i > 0 ? 42.5 : null,
+              d7_pct: i > 6 ? 21.3 : null,
+              d30_pct: null,
+            })),
           eventos: [
             { dia: dias[59].dia, evento: 'app_abierta', cantidad: 31000 },
             { dia: dias[59].dia, evento: 'busqueda', cantidad: 18200 },
@@ -549,7 +651,16 @@
             { texto: 'banco del sol', veces: 88, ultima_vez: dias[58].dia },
           ],
           reportadas: [
-            { marca: 'Ejemplo', banco_tarjeta: 'Banco Ejemplo Visa', descuento_porcentaje: 20, sigue_activa: true, reportes: 5, no_aplicaron: 4, otra_zona: 1, ultimos_comentarios: ['En caja me dijeron que no aplica con débito'] },
+            {
+              marca: 'Ejemplo',
+              banco_tarjeta: 'Banco Ejemplo Visa',
+              descuento_porcentaje: 20,
+              sigue_activa: true,
+              reportes: 5,
+              no_aplicaron: 4,
+              otra_zona: 1,
+              ultimos_comentarios: ['En caja me dijeron que no aplica con débito'],
+            },
           ],
         };
       }
