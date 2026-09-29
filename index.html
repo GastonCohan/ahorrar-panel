@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Ahorr-AR · Métricas</title>
+    <!--
+      Tablero de métricas de Ahorr-AR (docs/decisiones/0012). Página estática, sin datos: los trae
+      de la función panel-metricas de Supabase con la clave del panel (la guarda solo este
+      navegador). Se publica en GitHub Pages (repo gastoncohan/ahorrar-panel); la fuente es
+      scripts/panel/index.html del repo de la app. ?demo muestra datos de ejemplo.
+    -->
+    <style>
+      :root {
+        --bg: #f4f6f6;
+        --card: #ffffff;
+        --ink: #0b1512;
+        --muted: #536861;
+        --line: #e2ecec;
+        --brand: #10624b;
+        --brand-soft: #eaf6f0;
+        --accent: #3fa283;
+        --warn: #b3261e;
+        --warn-soft: #fdecea;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0b1512;
+          --card: #16211e;
+          --ink: #eef1f0;
+          --muted: #8a9894;
+          --line: #1f2e2a;
+          --brand: #8fd0bb;
+          --brand-soft: #0e2a23;
+          --accent: #3fa283;
+          --warn: #ffb4ab;
+          --warn-soft: #3a1a17;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 16px/1.4 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      }
+      header {
+        background: #0a4438;
+        color: #fff;
+        padding: 20px 16px 18px;
+      }
+      header h1 {
+        margin: 0;
+        font-size: 24px;
+        letter-spacing: -0.5px;
+      }
+      header h1 span {
+        color: #8fd0bb;
+      }
+      header p {
+        margin: 4px 0 0;
+        opacity: 0.8;
+        font-size: 14px;
+      }
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 16px;
+        display: grid;
+        gap: 16px;
+      }
+      .card {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 16px;
+      }
+      h2 {
+        margin: 0 0 4px;
+        font-size: 18px;
+      }
+      .sub {
+        margin: 0 0 12px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+      @media (min-width: 640px) {
+        .kpis {
+          grid-template-columns: repeat(4, 1fr);
+        }
+      }
+      .kpi {
+        background: var(--brand-soft);
+        border-radius: 14px;
+        padding: 12px;
+      }
+      .kpi b {
+        display: block;
+        font-size: 28px;
+        letter-spacing: -1px;
+        color: var(--brand);
+      }
+      .kpi small {
+        color: var(--muted);
+      }
+      svg {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px 4px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+      td.n,
+      th.n {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .bar {
+        height: 8px;
+        border-radius: 4px;
+        background: var(--accent);
+        margin-top: 4px;
+      }
+      .empty {
+        color: var(--muted);
+        font-size: 14px;
+        padding: 8px 0;
+      }
+      .grid2 {
+        display: grid;
+        gap: 16px;
+      }
+      @media (min-width: 720px) {
+        .grid2 {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      form {
+        display: grid;
+        gap: 12px;
+      }
+      input {
+        font: inherit;
+        padding: 14px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--ink);
+        min-height: 48px;
+      }
+      button {
+        font: inherit;
+        font-weight: 700;
+        min-height: 48px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--brand);
+        color: var(--card);
+        cursor: pointer;
+        padding: 0 20px;
+      }
+      button.ghost {
+        background: transparent;
+        color: var(--brand);
+        border: 1px solid var(--line);
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .error {
+        background: var(--warn-soft);
+        color: var(--warn);
+        border-radius: 12px;
+        padding: 12px;
+      }
+      .pill {
+        display: inline-block;
+        font-size: 12px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--brand-soft);
+        color: var(--brand);
+        margin: 2px 4px 2px 0;
+      }
+      .pill.warn {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+      .quote {
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 4px;
+      }
+      .demo {
+        background: #ffc845;
+        color: #0b1512;
+        text-align: center;
+        font-weight: 700;
+        padding: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="demo" class="demo" hidden>Datos de ejemplo: no son reales</div>
+    <header>
+      <h1>ahorr<span>AR</span> · Métricas</h1>
+      <p id="stamp">Estadísticas anónimas de la app</p>
+    </header>
+    <main id="app"></main>
+
+    <script>
+      'use strict';
+      const API = 'https://pjyipjmjukuoasovpiug.supabase.co/functions/v1/panel-metricas';
+      const KEY = 'ahorrar.panel.clave';
+      const app = document.getElementById('app');
+      const demo = new URLSearchParams(location.search).has('demo');
+
+      // ——— utilidades: todo el texto va con textContent (los comentarios los escribe la gente) ———
+      function el(tag, attrs, ...children) {
+        const node = document.createElement(tag);
+        for (const [k, v] of Object.entries(attrs || {})) {
+          if (k === 'class') node.className = v;
+          else if (k === 'text') node.textContent = v;
+          else node.setAttribute(k, v);
+        }
+        for (const c of children) if (c) node.append(c);
+        return node;
+      }
+      const svgEl = (tag, attrs) => {
+        const n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+        for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));
+        return n;
+      };
+      const num = (n) => Number(n || 0).toLocaleString('es-AR');
+      const porcentaje = (v) => Number(v).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + '%';
+      const fecha = (iso) =>
+        new Date(iso + (iso.length === 10 ? 'T12:00:00' : '')).toLocaleDateString('es-AR', {
+          day: '2-digit',
+          month: '2-digit',
+        });
+      const leerClave = () => {
+        try {
+          return localStorage.getItem(KEY);
+        } catch {
+          return null;
+        }
+      };
+      const guardarClave = (v) => {
+        try {
+          v ? localStorage.setItem(KEY, v) : localStorage.removeItem(KEY);
+        } catch {}
+      };
+
+      const NOMBRES = {
+        app_abierta: 'App abierta',
+        inicio_visto: 'Inicio visto',
+        busqueda: 'Búsquedas',
+        busqueda_sin_resultados: 'Búsquedas sin resultado',
+        filtro: 'Filtros usados',
+        promo_abierta: 'Promos abiertas',
+        fuente_abierta: 'Fuente oficial abierta',
+        tarjeta_agregada: 'Tarjetas agregadas',
+        nivel_cargado: 'Nivel de tarjeta cargado',
+        jubilado_activado: 'Casilla de jubilado',
+        aviso_diario_activado: 'Aviso diario activado',
+        guia_completada: 'Guía completada',
+        onboarding_completo: 'Onboarding completo',
+        reporte_enviado: 'Reportes enviados',
+      };
+      const MOTIVOS = {
+        no_aplicaron: 'No aplicó',
+        ya_no_esta: 'Ya no está',
+        datos_mal: 'Datos mal',
+        otra_zona: 'Otra zona',
+        otro: 'Otro',
+      };
+
+      // ——— pantallas ———
+      function login(error) {
+        app.replaceChildren();
+        const input = el('input', {
+          type: 'password',
+          autocomplete: 'current-password',
+          placeholder: 'Clave del panel',
+          'aria-label': 'Clave del panel',
+          required: '',
+        });
+        const form = el(
+          'form',
+          {},
+          el('h2', { text: 'Entrar' }),
+          el('p', { class: 'sub', text: 'La clave está en el archivo .panel-clave del proyecto. Queda guardada solo en este navegador.' }),
+          error ? el('div', { class: 'error', text: error }) : null,
+          input,
+          el('button', { type: 'submit', text: 'Ver métricas' }),
+        );
+        form.addEventListener('submit', (e) => {
+          e.preventDefault();
+          guardarClave(input.value.trim());
+          cargar();
+        });
+        app.append(el('section', { class: 'card' }, form));
+        input.focus();
+      }
+
+      async function cargar() {
+        if (demo) return render(datosDemo());
+        const clave = leerClave();
+        if (!clave) return login();
+        app.replaceChildren(el('p', { class: 'empty', text: 'Cargando…' }));
+        try {
+          const res = await fetch(API, { headers: { 'x-panel-clave': clave }, cache: 'no-store' });
+          if (res.status === 401) {
+            guardarClave(null);
+            return login('La clave no es correcta.');
+          }
+          if (!res.ok) throw new Error('El servidor respondió ' + res.status);
+          render(await res.json());
+        } catch (e) {
+          app.replaceChildren(
+            el('div', { class: 'error', text: 'No pudimos traer los datos. ' + (e.message || '') }),
+            el('button', { class: 'ghost', text: 'Reintentar', onclick: '' }),
+          );
+          app.lastChild.addEventListener('click', cargar);
+        }
+      }
+
+      function render(d) {
+        document.getElementById('demo').hidden = !demo;
+        document.getElementById('stamp').textContent =
+          'Actualizado ' + new Date(d.generado).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' });
+        app.replaceChildren(
+          kpis(d),
+          seccion('Usuarios activos por día', 'Últimos 90 días', grafico(d.diarios)),
+          seccion('Retención', 'De cada día de instalación, cuántos volvieron al día 1, 7 y 30', retencion(d.retencion)),
+          el(
+            'div',
+            { class: 'grid2' },
+            seccion('Qué se usa', 'Últimos 30 días', eventos(d.eventos)),
+            seccion('Rubros buscados', 'Últimos 30 días', ranking(d.dimensiones, 'busqueda')),
+          ),
+          el(
+            'div',
+            { class: 'grid2' },
+            seccion('Tarjetas y billeteras agregadas', 'Últimos 30 días', ranking(d.dimensiones, 'tarjeta_agregada')),
+            seccion('Filtros del buscador', 'Últimos 30 días', ranking(d.dimensiones, 'filtro')),
+          ),
+          seccion('Búsquedas sin resultado', 'Lo que la gente busca y no encuentra: comercios o bancos que faltan', sinResultados(d.sinResultados)),
+          seccion('Promos reportadas', '"Esto no funcionó", últimos 60 días', reportadas(d.reportadas)),
+          acciones(),
+        );
+      }
+
+      function seccion(titulo, sub, contenido) {
+        return el('section', { class: 'card' }, el('h2', { text: titulo }), el('p', { class: 'sub', text: sub }), contenido);
+      }
+      const vacio = (t) => el('p', { class: 'empty', text: t || 'Todavía no hay datos.' });
+
+      function kpis(d) {
+        const hoy = d.diarios.at(-1);
+        const semana = d.semanales[0];
+        const mes = d.mensuales[0];
+        const conD7 = d.retencion.filter((r) => r.d7_pct != null);
+        const d7 = conD7.length ? conD7.reduce((a, r) => a + Number(r.d7_pct), 0) / conD7.length : null;
+        const item = (valor, etiqueta) => el('div', { class: 'kpi' }, el('b', { text: valor }), el('small', { text: etiqueta }));
+        return el(
+          'section',
+          { class: 'kpis' },
+          item(hoy ? num(hoy.activos) : '—', 'Activos hoy'),
+          item(semana ? num(semana.activos) : '—', 'Activos esta semana'),
+          item(mes ? num(mes.activos) : '—', 'Activos este mes'),
+          item(d7 == null ? '—' : porcentaje(d7), 'Vuelven a los 7 días'),
+        );
+      }
+
+      function grafico(rows) {
+        if (!rows.length) return vacio();
+        const W = 800,
+          H = 220,
+          P = 28;
+        const max = Math.max(...rows.map((r) => Number(r.activos)), 1);
+        const bw = (W - P) / rows.length;
+        const s = svgEl('svg', { viewBox: `0 0 ${W} ${H + 24}`, role: 'img', 'aria-label': 'Usuarios activos por día' });
+        s.append(svgEl('line', { x1: P, y1: H, x2: W, y2: H, stroke: 'var(--line)' }));
+        const top = svgEl('text', { x: 0, y: 12, 'font-size': 12, fill: 'var(--muted)' });
+        top.textContent = num(max);
+        s.append(top);
+        rows.forEach((r, i) => {
+          const h = (Number(r.activos) / max) * (H - 20);
+          const rect = svgEl('rect', {
+            x: P + i * bw + bw * 0.15,
+            y: H - h,
+            width: Math.max(bw * 0.7, 1),
+            height: h,
+            rx: 2,
+            fill: i === rows.length - 1 ? 'var(--brand)' : 'var(--accent)',
+          });
+          const t = svgEl('title', {});
+          t.textContent = fecha(r.dia) + ': ' + num(r.activos);
+          rect.append(t);
+          s.append(rect);
+        });
+        for (const i of [0, Math.floor(rows.length / 2), rows.length - 1]) {
+          // La primera y la última alineadas al borde, para que no se corten.
+          const ancla = i === 0 ? 'start' : i === rows.length - 1 ? 'end' : 'middle';
+          const x = i === 0 ? P : i === rows.length - 1 ? W : P + i * bw + bw / 2;
+          const t = svgEl('text', { x, y: H + 18, 'font-size': 12, fill: 'var(--muted)', 'text-anchor': ancla });
+          t.textContent = fecha(rows[i].dia);
+          s.append(t);
+        }
+        return s;
+      }
+
+      function tabla(cabeza, filas) {
+        const t = el('table', {});
+        t.append(el('tr', {}, ...cabeza.map(([txt, n]) => el('th', { class: n ? 'n' : '', text: txt }))));
+        // Cada celda es un nodo (se pone tal cual) o [texto, numérica].
+        for (const f of filas)
+          t.append(el('tr', {}, ...f.map((c) => (c instanceof Node ? el('td', {}, c) : el('td', { class: c[1] ? 'n' : '', text: c[0] })))));
+        return t;
+      }
+
+      function retencion(rows) {
+        if (!rows.length) return vacio();
+        const pct = (v) => (v == null ? '—' : porcentaje(v));
+        return tabla(
+          [['Instalados el'], ['Nuevos', 1], ['Día 1', 1], ['Día 7', 1], ['Día 30', 1]],
+          rows.slice(0, 14).map((r) => [[fecha(r.cohorte)], [num(r.nuevas), 1], [pct(r.d1_pct), 1], [pct(r.d7_pct), 1], [pct(r.d30_pct), 1]]),
+        );
+      }
+
+      function eventos(rows) {
+        if (!rows.length) return vacio();
+        const tot = {};
+        for (const r of rows) tot[r.evento] = (tot[r.evento] || 0) + Number(r.cantidad);
+        const lista = Object.entries(tot).sort((a, b) => b[1] - a[1]);
+        return tabla([['Evento'], ['Veces', 1]], lista.map(([e, n]) => [[NOMBRES[e] || e], [num(n), 1]]));
+      }
+
+      function ranking(rows, evento) {
+        const tot = {};
+        for (const r of rows.filter((x) => x.evento === evento)) tot[r.dimension] = (tot[r.dimension] || 0) + Number(r.cantidad);
+        const lista = Object.entries(tot).sort((a, b) => b[1] - a[1]).slice(0, 12);
+        if (!lista.length) return vacio();
+        const max = lista[0][1];
+        return tabla(
+          [['', 0], ['Veces', 1]],
+          lista.map(([k, n]) => {
+            const celda = el('div', {}, el('span', { text: k === 'texto' ? 'Texto libre' : k }), el('div', { class: 'bar', style: `width:${(n / max) * 100}%` }));
+            return [celda, [num(n), 1]];
+          }),
+        );
+      }
+
+      function sinResultados(rows) {
+        if (!rows.length) return vacio('Nadie buscó algo que no encontrara. O todavía no hay datos.');
+        return tabla([['Buscaron'], ['Veces', 1], ['Última vez', 1]], rows.map((r) => [[r.texto], [num(r.veces), 1], [fecha(r.ultima_vez), 1]]));
+      }
+
+      function reportadas(rows) {
+        if (!rows.length) return vacio('Sin reportes. Buena señal.');
+        const lista = el('div', {});
+        for (const r of rows) {
+          const pills = el('div', {});
+          for (const [k, label] of Object.entries(MOTIVOS)) if (Number(r[k])) pills.append(el('span', { class: 'pill warn', text: `${label} · ${r[k]}` }));
+          if (!r.sigue_activa) pills.append(el('span', { class: 'pill', text: 'Ya no está activa' }));
+          const quotes = (r.ultimos_comentarios || []).map((c) => el('div', { class: 'quote', text: '“' + c + '”' }));
+          lista.append(
+            el(
+              'div',
+              { style: 'padding:10px 0;border-bottom:1px solid var(--line)' },
+              el('div', { class: 'row' }, el('b', { text: `${r.marca || '—'} · ${r.descuento_porcentaje ?? '?'}%` }), el('span', { class: 'pill', text: `${r.reportes} reportes` })),
+              el('div', { class: 'sub', style: 'margin:2px 0', text: r.banco_tarjeta || '' }),
+              pills,
+              ...quotes,
+            ),
+          );
+        }
+        return lista;
+      }
+
+      function acciones() {
+        const salir = el('button', { class: 'ghost', text: 'Salir' });
+        salir.addEventListener('click', () => {
+          guardarClave(null);
+          login();
+        });
+        const actualizar = el('button', { text: 'Actualizar' });
+        actualizar.addEventListener('click', cargar);
+        return el('div', { class: 'row' }, actualizar, demo ? null : salir);
+      }
+
+      // ——— datos de ejemplo (?demo): solo para ver el diseño ———
+      function datosDemo() {
+        const dias = Array.from({ length: 60 }, (_, i) => {
+          const d = new Date(Date.now() - (59 - i) * 86400000).toISOString().slice(0, 10);
+          return { dia: d, activos: Math.round(200 + i * 40 + Math.sin(i / 3) * 90) };
+        });
+        return {
+          generado: new Date().toISOString(),
+          diarios: dias,
+          semanales: [{ semana: dias[55].dia, activos: 9800 }],
+          mensuales: [{ mes: dias[40].dia, activos: 21400 }],
+          retencion: dias.slice(-20).reverse().map((d, i) => ({ cohorte: d.dia, nuevas: 400 + i * 7, d1_pct: i > 0 ? 42.5 : null, d7_pct: i > 6 ? 21.3 : null, d30_pct: null })),
+          eventos: [
+            { dia: dias[59].dia, evento: 'app_abierta', cantidad: 31000 },
+            { dia: dias[59].dia, evento: 'busqueda', cantidad: 18200 },
+            { dia: dias[59].dia, evento: 'promo_abierta', cantidad: 14100 },
+            { dia: dias[59].dia, evento: 'tarjeta_agregada', cantidad: 2300 },
+          ],
+          dimensiones: [
+            { evento: 'busqueda', dimension: 'supermercado', cantidad: 6200 },
+            { evento: 'busqueda', dimension: 'combustible', cantidad: 4100 },
+            { evento: 'busqueda', dimension: 'texto', cantidad: 3900 },
+            { evento: 'busqueda', dimension: 'gastronomia', cantidad: 2800 },
+            { evento: 'tarjeta_agregada', dimension: 'galicia', cantidad: 800 },
+            { evento: 'tarjeta_agregada', dimension: 'mercado_pago', cantidad: 760 },
+            { evento: 'filtro', dimension: 'hoy', cantidad: 1500 },
+            { evento: 'filtro', dimension: 'online', cantidad: 600 },
+          ],
+          sinResultados: [
+            { texto: 'jumbo online', veces: 140, ultima_vez: dias[59].dia },
+            { texto: 'banco del sol', veces: 88, ultima_vez: dias[58].dia },
+          ],
+          reportadas: [
+            { marca: 'Ejemplo', banco_tarjeta: 'Banco Ejemplo Visa', descuento_porcentaje: 20, sigue_activa: true, reportes: 5, no_aplicaron: 4, otra_zona: 1, ultimos_comentarios: ['En caja me dijeron que no aplica con débito'] },
+          ],
+        };
+      }
+
+      cargar();
+    </script>
+  </body>
+</html>
