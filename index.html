@@ -214,6 +214,10 @@
         margin: 2px 4px 2px 0;
         white-space: nowrap;
       }
+      .pill.gris {
+        background: var(--line);
+        color: var(--muted);
+      }
       .pill.warn {
         background: var(--warn-soft);
         color: var(--warn);
@@ -699,13 +703,20 @@
         const fases = s.fases || [];
         const fallas = s.fallas || [];
         const caidas = s.caidas || [];
+        // Sin ninguna fila y con un registro de menos de 26 h: la fase todavía no pasó desde que
+        // se empezó a registrar (no es una falla). Con más historia, sí cuenta como caída.
+        const registroNuevo =
+          !s.desde || Date.now() - new Date(s.desde).getTime() < HORAS_SIN_CORRER * 3600000;
+        const esperando = fases.filter((f) => !f.corrida && registroNuevo);
         const conFallas = fases.filter((f) => !sinCorrer(f) && Number(f.fallidas) > 0);
-        const sinCorrerLista = fases.filter(sinCorrer);
-        const bien = fases.length - conFallas.length - sinCorrerLista.length;
+        const sinCorrerLista = fases.filter((f) => sinCorrer(f) && !esperando.includes(f));
+        const bien = fases.length - conFallas.length - sinCorrerLista.length - esperando.length;
         const cont = el('div', {});
 
         const resumen = el('div', { class: 'row', style: 'justify-content:flex-start' });
-        resumen.append(el('span', { class: 'pill', text: `${bien} fases bien` }));
+        resumen.append(
+          el('span', { class: 'pill', text: `${bien} ${bien === 1 ? 'fase bien' : 'fases bien'}` }),
+        );
         if (conFallas.length)
           resumen.append(
             el('span', {
@@ -720,7 +731,17 @@
               text: `${sinCorrerLista.length} sin correr en ${HORAS_SIN_CORRER} h`,
             }),
           );
+        if (esperando.length)
+          resumen.append(
+            el('span', { class: 'pill gris', text: `${esperando.length} todavía sin registro` }),
+          );
         cont.append(resumen);
+        if (esperando.length)
+          cont.append(
+            vacio(
+              `El registro empezó el ${s.desde ? fechaHora(s.desde) : 'hoy'}: esas fases van a aparecer después de la corrida de la madrugada (02:00 a 04:45).`,
+            ),
+          );
 
         // Lo que falló: arriba y en rojo. Lo que anda, sin color.
         cont.append(el('h3', { text: 'Fuentes que fallaron (últimas 24 h)' }));
