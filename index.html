@@ -297,11 +297,15 @@
       .g32 {
         grid-template-columns: 3fr 2fr;
       }
+      .g3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
       @media (max-width: 960px) {
         .g4 {
           grid-template-columns: repeat(2, 1fr);
         }
         .g2,
+        .g3,
         .g32 {
           grid-template-columns: 1fr;
         }
@@ -1022,6 +1026,11 @@
           encabezado('resumen', 'Resumen', 'Usuarios activos y retención'),
           kpis(d),
           tarjeta(
+            'Por plataforma',
+            'Instalaciones activas en iPhone y Android',
+            plataformas(d.plataformas),
+          ),
+          tarjeta(
             'Usuarios activos por día',
             'Instalaciones distintas que abrieron la app',
             graficoActivos(d.diarios),
@@ -1159,6 +1168,44 @@
           }),
         );
         return s;
+      }
+
+      // Instalaciones activas por plataforma (02/10/2026): hoy, 7 y 30 días. Las versiones de la app
+      // anteriores a la 1.0.1 con EAS Update no mandan la plataforma: van como "Sin dato".
+      function plataformas(filas) {
+        if (!filas)
+          return vacio('No disponible todavía: falta aplicar la migración de plataformas.');
+        const PERIODOS = [
+          ['hoy', 'Hoy'],
+          ['7_dias', 'Últimos 7 días'],
+          ['30_dias', 'Últimos 30 días'],
+        ];
+        const NOMBRES = { android: 'Android', ios: 'iPhone', web: 'Web', sin_dato: 'Sin dato' };
+        const ORDEN = ['android', 'ios', 'web', 'sin_dato'];
+        const cuerpo = el('div', { class: 'grid g3' });
+        for (const [periodo, titulo] of PERIODOS) {
+          const delPeriodo = filas.filter((f) => f.periodo === periodo);
+          const total = delPeriodo.reduce((a, f) => a + Number(f.instalaciones), 0);
+          const bloque = el('div', {}, el('div', { class: 'subhead', text: titulo }));
+          if (!total) bloque.append(vacio('Sin instalaciones activas.'));
+          for (const p of ORDEN) {
+            const n = Number(delPeriodo.find((f) => f.plataforma === p)?.instalaciones ?? 0);
+            if (!n) continue;
+            bloque.append(
+              el(
+                'div',
+                { class: 'issue' },
+                el('div', { class: 'issue-title', text: NOMBRES[p] }),
+                el('div', {
+                  class: 'issue-side tnum',
+                  text: `${num(n)} · ${porcentaje(Math.round((n / total) * 100))}`,
+                }),
+              ),
+            );
+          }
+          cuerpo.append(bloque);
+        }
+        return cuerpo;
       }
 
       function kpis(d) {
@@ -1932,6 +1979,17 @@
               versiones: ['1.0.1'],
               plataformas: ['ios'],
             },
+          ],
+          plataformas: [
+            { periodo: 'hoy', plataforma: 'android', instalaciones: 2410 },
+            { periodo: 'hoy', plataforma: 'ios', instalaciones: 1180 },
+            { periodo: 'hoy', plataforma: 'sin_dato', instalaciones: 81 },
+            { periodo: '7_dias', plataforma: 'android', instalaciones: 6420 },
+            { periodo: '7_dias', plataforma: 'ios', instalaciones: 3150 },
+            { periodo: '7_dias', plataforma: 'sin_dato', instalaciones: 230 },
+            { periodo: '30_dias', plataforma: 'android', instalaciones: 13900 },
+            { periodo: '30_dias', plataforma: 'ios', instalaciones: 6800 },
+            { periodo: '30_dias', plataforma: 'sin_dato', instalaciones: 700 },
           ],
           salud: {
             desde: hace(5),
