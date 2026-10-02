@@ -1691,6 +1691,58 @@
             ),
           );
 
+        // Lo que cada fuente descartó en su última corrida (02/10/2026): medios que la app no tiene,
+        // vencidas, sin días… Sirve para ver qué medio sumar o qué parser mejorar.
+        const omitidas = s.omitidas || [];
+        cuerpo.append(
+          el('div', { class: 'subhead', text: 'Promos que no se cargaron · última corrida' }),
+        );
+        if (!omitidas.length) cuerpo.append(vacio('Ninguna fuente descartó promos.'));
+        else {
+          const totalOmitidas = omitidas.reduce((a, o) => a + Number(o.omitidas_cantidad), 0);
+          cuerpo.append(
+            vacio(
+              `${plural(totalOmitidas, 'promo descartada', 'promos descartadas')} en ${plural(omitidas.length, 'fuente', 'fuentes')}. Debajo de cada fuente, por qué.`,
+            ),
+          );
+          const fila = (o) => [
+            el(
+              'div',
+              {},
+              el('div', { class: 'issue-title', text: o.fuente }),
+              el('div', {
+                class: 'issue-meta',
+                text: `${o.banco_tarjeta || '—'} · fase ${o.fase} · ${fechaHora(o.corrida)}`,
+              }),
+              el('div', {
+                class: 'mono',
+                text: String(o.omitidas || '').replace(/^omitidas: /, ''),
+              }),
+            ),
+            [num(o.insertados), 1],
+            (() => {
+              const b = el('span', {
+                class: 'badge amber tnum',
+                text: num(o.omitidas_cantidad),
+              });
+              b.dataset.n = '1';
+              return b;
+            })(),
+          ];
+          const columnas = [['Fuente y motivos'], ['Cargó', 1], ['Descartó', 1]];
+          const VISIBLES = 10;
+          cuerpo.append(tabla(columnas, omitidas.slice(0, VISIBLES).map(fila)));
+          if (omitidas.length > VISIBLES) {
+            const resto = el(
+              'details',
+              {},
+              el('summary', { text: `Ver las otras ${omitidas.length - VISIBLES}` }),
+            );
+            resto.append(tabla(columnas, omitidas.slice(VISIBLES).map(fila)));
+            cuerpo.append(resto);
+          }
+        }
+
         const fases = e.fases;
         if (fases.length) {
           const orden = [...fases].sort(
@@ -1929,6 +1981,29 @@
               { producto: 'Mercado Pago', activas: 230 },
               { producto: 'Clarín 365', activas: 180 },
               { producto: 'Prex', activas: 11 },
+            ],
+            omitidas: [
+              {
+                fase: 'comercios_3',
+                fuente: 'laanonima',
+                banco_tarjeta: '(La Anónima: varios medios)',
+                corrida: hace(0.2),
+                encontrados: 40,
+                insertados: 17,
+                omitidas_cantidad: 23,
+                omitidas:
+                  'omitidas: 13 la app no tiene ese medio (Mutualcard, Tarjeta Elebar), 10 vencida (Naranja X)',
+              },
+              {
+                fase: 'comercios_6',
+                fuente: 'samsung',
+                banco_tarjeta: '(Samsung: varios medios)',
+                corrida: hace(0.3),
+                encontrados: 30,
+                insertados: 16,
+                omitidas_cantidad: 14,
+                omitidas: 'omitidas: 9 vencida (Santander, BBVA), 5 sin días en el texto (Galicia)',
+              },
             ],
           },
         };
