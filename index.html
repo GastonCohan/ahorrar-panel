@@ -239,6 +239,14 @@
         display: grid;
         gap: 24px;
       }
+      /* Solapas (03/10/2026): cada sección en su propia solapa, no todo en una página. */
+      .tab {
+        display: grid;
+        gap: 24px;
+      }
+      .tab[hidden] {
+        display: none;
+      }
       .section-head {
         display: flex;
         align-items: baseline;
@@ -1023,62 +1031,80 @@
         const s = estadoSalud(d.salud);
         barraSuperior(d, s.resumen);
         app.replaceChildren(
-          encabezado('resumen', 'Resumen', 'Usuarios activos y retención'),
-          kpis(d),
-          tarjeta(
-            'Por plataforma',
-            'Instalaciones activas en iPhone y Android',
-            plataformas(d.plataformas),
-          ),
-          tarjeta(
-            'Usuarios activos por día',
-            'Instalaciones distintas que abrieron la app',
-            graficoActivos(d.diarios),
-          ),
-          encabezado('uso', 'Uso', 'Últimos 30 días'),
-          el(
-            'div',
-            { class: 'grid g2' },
-            tarjeta('Qué se usa', 'Eventos de la app', eventos(d.eventos)),
-            tarjeta('Rubros buscados', 'Búsquedas por rubro', ranking(d.dimensiones, 'busqueda')),
-          ),
-          el(
-            'div',
-            { class: 'grid g2' },
+          solapa(
+            'resumen',
+            encabezado('resumen', 'Resumen', 'Usuarios activos y retención'),
+            kpis(d),
             tarjeta(
-              'Tarjetas y billeteras agregadas',
-              'Medios que suma la gente',
-              ranking(d.dimensiones, 'tarjeta_agregada'),
+              'Por plataforma',
+              'Instalaciones activas en iPhone y Android',
+              plataformas(d.plataformas),
             ),
             tarjeta(
-              'Filtros del buscador',
-              'Qué filtros se tocan',
-              ranking(d.dimensiones, 'filtro'),
+              'Usuarios activos por día',
+              'Instalaciones distintas que abrieron la app',
+              graficoActivos(d.diarios),
             ),
           ),
-          encabezado('retencion', 'Retención', 'Por día de instalación'),
-          tarjeta(
-            'Cohortes',
-            'De cada día de instalación, cuántos volvieron al día 1, 7 y 30',
-            retencion(d.retencion),
-          ),
-          encabezado('datos', 'Calidad de datos', 'Actualización de promos de cada madrugada'),
-          salud(d.salud, s),
-          encabezado('errores', 'Errores de la app', 'Últimos 7 días, de más a menos frecuente'),
-          tarjeta(null, null, errores(d.errores)),
-          encabezado('feedback', 'Feedback', 'Lo que la gente reporta y no encuentra'),
-          el(
-            'div',
-            { class: 'grid g2' },
-            tarjeta(
-              'Promos reportadas',
-              '"Esto no funcionó", últimos 60 días',
-              reportadas(d.reportadas),
+          solapa(
+            'uso',
+            encabezado('uso', 'Uso', 'Últimos 30 días'),
+            el(
+              'div',
+              { class: 'grid g2' },
+              tarjeta('Qué se usa', 'Eventos de la app', eventos(d.eventos)),
+              tarjeta('Rubros buscados', 'Búsquedas por rubro', ranking(d.dimensiones, 'busqueda')),
             ),
+            el(
+              'div',
+              { class: 'grid g2' },
+              tarjeta(
+                'Tarjetas y billeteras agregadas',
+                'Medios que suma la gente',
+                ranking(d.dimensiones, 'tarjeta_agregada'),
+              ),
+              tarjeta(
+                'Filtros del buscador',
+                'Qué filtros se tocan',
+                ranking(d.dimensiones, 'filtro'),
+              ),
+            ),
+          ),
+          solapa(
+            'retencion',
+            encabezado('retencion', 'Retención', 'Por día de instalación'),
             tarjeta(
-              'Búsquedas sin resultado',
-              'Comercios o bancos que faltan',
-              sinResultados(d.sinResultados),
+              'Cohortes',
+              'De cada día de instalación, cuántos volvieron al día 1, 7 y 30',
+              retencion(d.retencion),
+            ),
+          ),
+          solapa(
+            'datos',
+            encabezado('datos', 'Calidad de datos', 'Actualización de promos de cada madrugada'),
+            salud(d.salud, s),
+          ),
+          solapa(
+            'errores',
+            encabezado('errores', 'Errores de la app', 'Últimos 7 días, de más a menos frecuente'),
+            tarjeta(null, null, errores(d.errores)),
+          ),
+          solapa(
+            'feedback',
+            encabezado('feedback', 'Feedback', 'Lo que la gente reporta y no encuentra'),
+            el(
+              'div',
+              { class: 'grid g2' },
+              tarjeta(
+                'Promos reportadas',
+                '"Esto no funcionó", últimos 60 días',
+                reportadas(d.reportadas),
+              ),
+              tarjeta(
+                'Búsquedas sin resultado',
+                'Comercios o bancos que faltan',
+                sinResultados(d.sinResultados),
+              ),
             ),
           ),
         );
@@ -1112,28 +1138,29 @@
       const vacio = (t) => el('p', { class: 'empty', text: t || 'Todavía no hay datos.' });
 
       // La pestaña de la sección que se está viendo queda marcada.
+      /** Una solapa: una sección del panel (03/10/2026: antes era todo en una sola página). */
+      function solapa(id, ...hijos) {
+        return el('div', { class: 'tab', id: 'tab-' + id }, ...hijos);
+      }
+
+      /** Muestra la solapa del link elegido (el hash de la dirección) y oculta las demás. */
       function seguirSecciones() {
         const links = [...nav.querySelectorAll('a')];
-        // La última sección cuyo título ya pasó por debajo de la barra (al final, la última).
-        const marcar = () => {
-          const alto = document.querySelector('.topbar').offsetHeight;
-          // Al saltar a una sección, el título queda debajo de la barra (que en el celular es más alta).
-          document.documentElement.style.scrollPaddingTop = alto + 16 + 'px';
-          const barra = alto + 24;
-          const alFinal = innerHeight + scrollY >= document.documentElement.scrollHeight - 4;
-          let actual = links[0];
-          for (const a of links) {
-            const t = document.querySelector(a.hash);
-            if (t && t.getBoundingClientRect().top <= barra) actual = a;
-          }
-          if (alFinal) actual = links.at(-1);
-          links.forEach((a) => a.classList.toggle('on', a === actual));
+        const ids = links.map((a) => a.hash.slice(1));
+        const mostrar = () => {
+          const pedido = location.hash.slice(1);
+          const id = ids.includes(pedido) ? pedido : ids[0];
+          document.querySelectorAll('.tab').forEach((t) => {
+            t.hidden = t.id !== 'tab-' + id;
+          });
+          links.forEach((a) => a.classList.toggle('on', a.hash === '#' + id));
+          scrollTo(0, 0);
         };
         if (!seguirSecciones.activo) {
           seguirSecciones.activo = true;
-          addEventListener('scroll', marcar, { passive: true });
+          addEventListener('hashchange', mostrar);
         }
-        marcar();
+        mostrar();
       }
 
       // ——— resumen ———
