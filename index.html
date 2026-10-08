@@ -892,6 +892,8 @@
         guia_completada: 'Guía completada',
         onboarding_completo: 'Onboarding completo',
         reporte_enviado: 'Reportes enviados',
+        comercio_buscado: 'Comercios buscados',
+        comercio_abierto: 'Comercios abiertos',
       };
       const MOTIVOS = {
         no_aplicaron: 'No aplicó',
@@ -1067,6 +1069,21 @@
                 'Filtros del buscador',
                 'Qué filtros se tocan',
                 ranking(d.dimensiones, 'filtro'),
+              ),
+            ),
+            // Qué comercios busca y mira la gente (08/10/2026): la clave del comercio en la app.
+            el(
+              'div',
+              { class: 'grid g2' },
+              tarjeta(
+                'Comercios más buscados',
+                'Búsquedas de texto que apuntan a un comercio',
+                ranking(d.dimensiones, 'comercio_buscado'),
+              ),
+              tarjeta(
+                'Comercios más abiertos',
+                'Promos abiertas, por comercio',
+                ranking(d.dimensiones, 'comercio_abierto'),
               ),
             ),
           ),
@@ -1955,6 +1972,12 @@
             { evento: 'tarjeta_agregada', dimension: 'mercado_pago', cantidad: 760 },
             { evento: 'filtro', dimension: 'hoy', cantidad: 1500 },
             { evento: 'filtro', dimension: 'online', cantidad: 600 },
+            { evento: 'comercio_buscado', dimension: 'coto', cantidad: 950 },
+            { evento: 'comercio_buscado', dimension: 'carrefour', cantidad: 720 },
+            { evento: 'comercio_buscado', dimension: 'ypf', cantidad: 410 },
+            { evento: 'comercio_abierto', dimension: 'coto', cantidad: 1300 },
+            { evento: 'comercio_abierto', dimension: 'dia', cantidad: 880 },
+            { evento: 'comercio_abierto', dimension: 'farmacity', cantidad: 530 },
           ],
           sinResultados: [
             { texto: 'jumbo online', veces: 140, ultima_vez: dias[89].dia },
